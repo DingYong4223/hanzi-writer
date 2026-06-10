@@ -8,3 +8,4 @@ coverage
 cdn
 dist
 _site
+package-lock.json
