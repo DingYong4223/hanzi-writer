@@ -74,10 +74,21 @@ export type QuizOptions = {
   markStrokeCorrectAfterMisses: number | false;
   /** bigger = more lenient */
   averageDistanceThreshold: number;
+  /**
+   * Enable random-order mode: accept strokes in any order, light each one immediately,
+   * then judge stroke order at the end via onComplete's `userStrokeOrder`.
+   * Default: false
+   */
+  randomOrder: boolean;
   onMistake?: (strokeData: StrokeData) => void;
   onCorrectStroke?: (strokeData: StrokeData) => void;
   /** Callback when the quiz completes */
-  onComplete?: (summary: { character: string; totalMistakes: number }) => void;
+  onComplete?: (summary: {
+    character: string;
+    totalMistakes: number;
+    /** Only present in randomOrder mode. Stroke indices in the order the user drew them. */
+    userStrokeOrder?: number[];
+  }) => void;
 };
 
 export type LoadingManagerOptions = {

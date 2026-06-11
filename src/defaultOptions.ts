@@ -42,6 +42,7 @@ const defaultOptions: HanziWriterOptions = {
   acceptBackwardsStrokes: false,
   quizStartStrokeNum: 0,
   averageDistanceThreshold: 350,
+  randomOrder: false,
 
   // undocumented obscure options
 

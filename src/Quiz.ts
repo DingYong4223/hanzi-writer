@@ -10,6 +10,23 @@ import { ParsedHanziWriterOptions, Point, StrokeData } from './typings/types';
 import RenderState from './RenderState';
 import { GenericMutation } from './Mutation';
 
+/**
+ * Thin wrapper around strokeMatches that also returns avgDist,
+ * used by randomOrder mode to find the closest-matching stroke.
+ */
+const strokeMatchesWithDist = (
+  userStroke: UserStroke,
+  character: Character,
+  strokeIndex: number,
+  options: { isOutlineVisible?: boolean; leniency?: number; averageDistanceThreshold?: number },
+): { isMatch: boolean; avgDist: number } => {
+  // strokeMatches itself doesn't expose avgDist publicly, so we call it and
+  // approximate avgDist via the Stroke's getAverageDistance helper.
+  const result = strokeMatches(userStroke, character, strokeIndex, options);
+  const avgDist = character.strokes[strokeIndex].getAverageDistance(userStroke.points);
+  return { isMatch: result.isMatch, avgDist };
+};
+
 const getDrawnPath = (userStroke: UserStroke) => ({
   pathString: geometry.getPathString(userStroke.externalPoints),
   points: userStroke.points.map((point) => geometry.round(point)),
@@ -29,6 +46,10 @@ export default class Quiz {
   _userStroke: UserStroke | undefined;
   _userStrokesIds: Array<number> | undefined;
 
+  // randomOrder mode state
+  /** Stroke indices already lit, in draw order (randomOrder mode only) */
+  _randomOrderLitStrokes: number[] = [];
+
   constructor(character: Character, renderState: RenderState, positioner: Positioner) {
     this._character = character;
     this._renderState = renderState;
@@ -46,6 +67,8 @@ export default class Quiz {
 
     this._isActive = true;
     this._options = options;
+    this._randomOrderLitStrokes = [];
+
     const startIndex = fixIndex(
       options.quizStartStrokeNum,
       this._character.strokes.length,
@@ -54,13 +77,15 @@ export default class Quiz {
     this._mistakesOnStroke = 0;
     this._totalMistakes = 0;
 
-    return this._renderState.run(
-      quizActions.startQuiz(
-        this._character,
-        options.strokeFadeDuration,
-        this._currentStrokeIndex,
-      ),
-    );
+    const initMutations = options.randomOrder
+      ? quizActions.startRandomOrderQuiz(this._character)
+      : quizActions.startQuiz(
+          this._character,
+          options.strokeFadeDuration,
+          this._currentStrokeIndex,
+        );
+
+    return this._renderState.run(initMutations);
   }
 
   startUserStroke(externalPoint: Point) {
@@ -109,51 +134,10 @@ export default class Quiz {
       return;
     }
 
-    const { acceptBackwardsStrokes, markStrokeCorrectAfterMisses } = this._options!;
-
-    const currentStroke = this._getCurrentStroke();
-    const { isMatch, meta } = strokeMatches(
-      this._userStroke,
-      this._character,
-      this._currentStrokeIndex,
-      {
-        isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
-        leniency: this._options!.leniency,
-        averageDistanceThreshold: this._options!.averageDistanceThreshold,
-      },
-    );
-
-    // if markStrokeCorrectAfterMisses is passed, just force the stroke to count as correct after n tries
-    const isForceAccepted =
-      markStrokeCorrectAfterMisses &&
-      this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
-
-    const isAccepted =
-      isMatch || isForceAccepted || (meta.isStrokeBackwards && acceptBackwardsStrokes);
-
-    if (isAccepted) {
-      this._handleSuccess(meta);
+    if (this._options!.randomOrder) {
+      this._handleRandomOrderStroke();
     } else {
-      this._handleFailure(meta);
-
-      const {
-        showHintAfterMisses,
-        highlightColor,
-        strokeHighlightSpeed,
-      } = this._options!;
-
-      if (
-        showHintAfterMisses !== false &&
-        this._mistakesOnStroke >= showHintAfterMisses
-      ) {
-        this._renderState.run(
-          characterActions.highlightStroke(
-            currentStroke,
-            colorStringToVals(highlightColor),
-            strokeHighlightSpeed,
-          ),
-        );
-      }
+      this._handleOrderedStroke();
     }
 
     this._userStroke = undefined;
@@ -230,6 +214,104 @@ export default class Quiz {
     }
 
     this._renderState.run(animation);
+  }
+
+  /** Original ordered-quiz stroke handling (unchanged behavior). */
+  _handleOrderedStroke() {
+    const { acceptBackwardsStrokes, markStrokeCorrectAfterMisses } = this._options!;
+
+    const currentStroke = this._getCurrentStroke();
+    const { isMatch, meta } = strokeMatches(
+      this._userStroke!,
+      this._character,
+      this._currentStrokeIndex,
+      {
+        isOutlineVisible: this._renderState.state.character.outline.opacity > 0,
+        leniency: this._options!.leniency,
+        averageDistanceThreshold: this._options!.averageDistanceThreshold,
+      },
+    );
+
+    const isForceAccepted =
+      markStrokeCorrectAfterMisses &&
+      this._mistakesOnStroke + 1 >= markStrokeCorrectAfterMisses;
+
+    const isAccepted =
+      isMatch || isForceAccepted || (meta.isStrokeBackwards && acceptBackwardsStrokes);
+
+    if (isAccepted) {
+      this._handleSuccess(meta);
+    } else {
+      this._handleFailure(meta);
+
+      const { showHintAfterMisses, highlightColor, strokeHighlightSpeed } = this._options!;
+
+      if (
+        showHintAfterMisses !== false &&
+        this._mistakesOnStroke >= showHintAfterMisses
+      ) {
+        this._renderState.run(
+          characterActions.highlightStroke(
+            currentStroke,
+            colorStringToVals(highlightColor),
+            strokeHighlightSpeed,
+          ),
+        );
+      }
+    }
+  }
+
+  /**
+   * Random-order quiz stroke handling.
+   * Matches the user stroke against ALL not-yet-lit strokes and lights the closest one.
+   * Collects draw order in _randomOrderLitStrokes; fires onComplete when all strokes are lit.
+   */
+  _handleRandomOrderStroke() {
+    const { strokes, symbol } = this._character;
+    const isOutlineVisible = this._renderState.state.character.outline.opacity > 0;
+    const { leniency, averageDistanceThreshold, strokeFadeDuration, onComplete } =
+      this._options!;
+
+    // Find the best-matching not-yet-lit stroke
+    let bestStrokeIndex = -1;
+    let bestAvgDist = Infinity;
+
+    for (let i = 0; i < strokes.length; i++) {
+      if (this._randomOrderLitStrokes.indexOf(i) !== -1) continue; // already lit
+
+      const { isMatch, avgDist } = strokeMatchesWithDist(
+        this._userStroke!,
+        this._character,
+        i,
+        { isOutlineVisible, leniency, averageDistanceThreshold },
+      );
+
+      if (isMatch && avgDist < bestAvgDist) {
+        bestAvgDist = avgDist;
+        bestStrokeIndex = i;
+      }
+    }
+
+    if (bestStrokeIndex === -1) {
+      // No match — silently ignore (no mistake counted, no hint shown)
+      return;
+    }
+
+    // Light the matched stroke
+    this._randomOrderLitStrokes.push(bestStrokeIndex);
+    this._renderState.run(
+      characterActions.showStroke('main', bestStrokeIndex, strokeFadeDuration),
+    );
+
+    // Check completion
+    if (this._randomOrderLitStrokes.length === strokes.length) {
+      this._isActive = false;
+      onComplete?.({
+        character: symbol,
+        totalMistakes: 0,
+        userStrokeOrder: [...this._randomOrderLitStrokes],
+      });
+    }
   }
 
   _handleSuccess(meta: StrokeMatchResultMeta) {

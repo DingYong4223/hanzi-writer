@@ -88,3 +88,16 @@ button:hover {
 	border: 1px solid #1e6cd2;
 	box-shadow: none;
 }
+
+button.active {
+	background: #1e6cd2;
+	color: white;
+	border: 1px solid #1e6cd2;
+	box-shadow: none;
+}
+
+button.active:hover {
+	background: #1558b0;
+	border-color: #1558b0;
+	color: white;
+}

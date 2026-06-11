@@ -32,6 +32,36 @@ export const startQuiz = (
   ];
 };
 
+/**
+ * Like startQuiz but without the fade-out animation on the main character.
+ * Used by randomOrder mode so that the setup mutations complete synchronously,
+ * preventing any "showStroke" call from cancelling the still-running fade chain.
+ */
+export const startRandomOrderQuiz = (
+  character: Character,
+): GenericMutation[] => {
+  return [
+    // duration=0: completes instantly, no long-running chain to conflict with showStroke
+    ...characterActions.hideCharacter('main', character, 0),
+    new Mutation(
+      'character.highlight',
+      {
+        opacity: 1,
+        strokes: objRepeat({ opacity: 0 }, character.strokes.length),
+      },
+      { force: true },
+    ),
+    new Mutation(
+      'character.main',
+      {
+        opacity: 1,
+        strokes: objRepeat({ opacity: 0 }, character.strokes.length),
+      },
+      { force: true },
+    ),
+  ];
+};
+
 export const startUserStroke = (id: string | number, point: Point): GenericMutation[] => {
   return [
     new Mutation('quiz.activeUserStrokeId', id, { force: true }),
