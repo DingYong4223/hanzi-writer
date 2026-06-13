@@ -101,3 +101,106 @@ button.active:hover {
 	border-color: #1558b0;
 	color: white;
 }
+
+/* Nav links on index page */
+.nav-links {
+  margin: 0 0 25px;
+}
+
+.nav-btn {
+  display: inline-block;
+  padding: 12px 30px;
+  margin: 0 8px;
+  background: #1e6cd2;
+  color: white !important;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: background 300ms;
+}
+
+.nav-btn:hover {
+  background: #1558b0;
+}
+
+/* Challenge / Test page layout */
+#challenge-app, #test-app {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+#challenge-app #target, #test-app #target {
+  width: 300px;
+  height: 300px;
+}
+
+#game-header, #test-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  padding: 0 5px;
+}
+
+#game-actions, #test-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-primary {
+  background: #1e6cd2;
+  color: white;
+  border: 1px solid #1e6cd2;
+  padding: 12px 35px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 300ms;
+}
+
+.btn-primary:hover {
+  background: #1558b0;
+  border-color: #1558b0;
+  color: white;
+}
+
+.btn-warning {
+  background: #d9534f;
+  color: white;
+  border: 1px solid #d9534f;
+  padding: 10px 25px;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 300ms;
+}
+
+.btn-warning:hover {
+  background: #c9302c;
+  border-color: #c9302c;
+  color: white;
+}
+
+#start-screen, #end-screen, #result-screen {
+  padding: 50px 20px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.feedback {
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  min-height: 30px;
+  color: #d9534f;
+}
+
+.feedback-success {
+  color: #5cb85c;
+}

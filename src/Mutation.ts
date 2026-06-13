@@ -231,7 +231,7 @@ function isAlreadyAtEnd<T>(
   for (const key in endValues) {
     const endValue = endValues[key];
     const startValue = startValues?.[key];
-    if (endValue >= 0) {
+    if (typeof endValue === 'number' && endValue >= 0) {
       if (endValue !== startValue) {
         return false;
       }

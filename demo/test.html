@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>测试 - Hanzi Writer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <h1 class="title">测试模式</h1>
+
+    <div id="test-app">
+        <!-- Start screen -->
+        <div id="start-screen">
+            <p>连续写 10 个字</p>
+            <p>每个字不限笔顺，写完自动进入下一个</p>
+            <button id="btn-start" class="btn-primary">开始测试</button>
+        </div>
+
+        <!-- Test screen -->
+        <div id="test-screen" style="display:none">
+            <div id="test-header">
+                <span id="char-info">第 1 / 10 个字</span>
+                <span id="score-info">得分: 0</span>
+            </div>
+            <div id="target"></div>
+            <div id="test-actions">
+                <button id="btn-skip">跳过</button>
+                <button id="btn-back-home">返回主页</button>
+            </div>
+            <div id="feedback" class="feedback"></div>
+        </div>
+
+        <!-- Result screen -->
+        <div id="result-screen" style="display:none">
+            <p id="result-msg"></p>
+            <button id="btn-restart" class="btn-primary">再来一次</button>
+            <button id="btn-home">返回主页</button>
+        </div>
+    </div>
+
+    <script src="../dist/hanzi-writer.js"></script>
+    <script src="test-page.js"></script>
+</body>
+</html>
