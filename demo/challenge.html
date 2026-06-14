@@ -9,34 +9,40 @@
 <body>
     <h1 class="title">挑战模式</h1>
 
-    <div id="challenge-app">
-        <!-- Start screen -->
-        <div id="start-screen">
-            <p>共 10 关，每关写一个字</p>
-            <p>每关有 3 次尝试机会</p>
-            <button id="btn-start" class="btn-primary">开始挑战</button>
-        </div>
-
-        <!-- Game screen -->
-        <div id="game-screen" style="display:none">
-            <div id="game-header">
-                <span id="level-info">第 1 / 10 关</span>
-                <span id="attempts-info">剩余尝试: 3</span>
+    <!-- Level select screen -->
+    <div id="level-screen">
+        <div id="progress-bar-wrap">
+            <div id="progress-text">0 / 10</div>
+            <div id="progress-bar-bg">
+                <div id="progress-bar-fill"></div>
             </div>
-            <div id="target"></div>
-            <div id="game-actions">
-                <button id="btn-retry" class="btn-warning">重试</button>
-                <button id="btn-back-home">返回主页</button>
-            </div>
-            <div id="feedback" class="feedback"></div>
         </div>
+        <div id="level-grid"></div>
+        <div id="level-actions">
+            <button id="btn-reset-progress" class="btn-danger">重置进度</button>
+            <a href="index.html" class="nav-btn" style="display:inline-block;margin-top:15px">返回主页</a>
+        </div>
+    </div>
 
-        <!-- End screen -->
-        <div id="end-screen" style="display:none">
-            <p id="end-msg"></p>
-            <button id="btn-restart" class="btn-primary">再来一次</button>
-            <button id="btn-home">返回主页</button>
+    <!-- Game screen -->
+    <div id="game-screen" style="display:none">
+        <div id="game-header">
+            <span id="level-info">第 1 关</span>
+            <span id="attempts-info">剩余尝试: 3</span>
+            <button id="btn-back-levels" class="btn-sm">退出</button>
         </div>
+        <div id="target"></div>
+        <div id="game-actions">
+            <button id="btn-retry" class="btn-warning">重试</button>
+        </div>
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <!-- End screen -->
+    <div id="end-screen" style="display:none">
+        <p id="end-msg"></p>
+        <button id="btn-restart" class="btn-primary">重新挑战</button>
+        <a href="index.html" class="nav-btn" style="display:inline-block;margin-top:15px">返回主页</a>
     </div>
 
     <script src="../dist/hanzi-writer.js"></script>
